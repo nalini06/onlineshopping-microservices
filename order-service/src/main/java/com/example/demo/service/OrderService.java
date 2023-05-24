@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.example.demo.repository.OrderRepository;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,20 +24,34 @@ public class OrderService {
     @Autowired
     private OrderRepository orderRepository;
 
+    @Autowired
+    private  WebClient webClient;
+
     public Order placeOrder(OrderRequest orderRequest){
         Order order = Order.builder()
                 .orderNumber(UUID.randomUUID().toString())
                 .build();
-        System.out.println(String.valueOf(order));
+
         List<OrderLineItems> orderLineItems = orderRequest.getOrderLineItemListDtoList()
                 .stream()
                 .map(orderLineItemsDto -> mapToDto(orderLineItemsDto)).collect(Collectors.toList());
         order.setOrderLineItems(orderLineItems);
-        try{
+
+        Boolean result = webClient.get()
+                .uri("http://localhost:8081/api/inventory")
+                .retrieve()
+                .bodyToMono(Boolean.class)
+                .block();
+
+        if(result){
             orderRepository.save(order);
-        }catch (Exception exception){
-            log.error("Failed to save order in db " + exception.getMessage());
+        }else{
+
+            log.error("Failed to save order in db ");
+            throw  new IllegalArgumentException("Product is not available in inventory");
         }
+
+
 
         return order;
     }
