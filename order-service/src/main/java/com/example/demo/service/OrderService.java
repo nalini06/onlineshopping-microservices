@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 
+import com.example.demo.dto.InventoryResponse;
 import com.example.demo.dto.OrderLineItemsDto;
 import com.example.demo.dto.OrderRequest;
 import com.example.demo.model.Order;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import com.example.demo.repository.OrderRepository;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -34,16 +36,23 @@ public class OrderService {
 
         List<OrderLineItems> orderLineItems = orderRequest.getOrderLineItemListDtoList()
                 .stream()
-                .map(orderLineItemsDto -> mapToDto(orderLineItemsDto)).collect(Collectors.toList());
+                .map(this::mapToDto)
+                .toList();
         order.setOrderLineItems(orderLineItems);
 
-        Boolean result = webClient.get()
-                .uri("http://localhost:8081/api/inventory")
+        List<String> skuCodes = order.getOrderLineItems().stream()
+                .map(OrderLineItems::getSkuCode)
+                .toList();
+
+        InventoryResponse[] inventoryResponses = webClient.get()
+                .uri("http://localhost:8082/api/inventory", uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
                 .retrieve()
-                .bodyToMono(Boolean.class)
+                .bodyToMono(InventoryResponse[].class)
                 .block();
 
-        if(result){
+        boolean allProductsInStock = Arrays.stream(inventoryResponses).allMatch(InventoryResponse::isInStock);
+
+        if(allProductsInStock){
             orderRepository.save(order);
         }else{
 

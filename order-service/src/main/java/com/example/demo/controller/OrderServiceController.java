@@ -19,6 +19,7 @@ public class OrderServiceController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Order placeOrder(@RequestBody OrderRequest orderRequest){
+        System.out.println(orderRequest.getOrderLineItemListDtoList());
         Order placedOrder = orderService.placeOrder(orderRequest);
         return placedOrder;
     }
