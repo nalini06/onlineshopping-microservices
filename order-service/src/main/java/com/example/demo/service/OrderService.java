@@ -6,13 +6,14 @@ import com.example.demo.dto.OrderLineItemsDto;
 import com.example.demo.dto.OrderRequest;
 import com.example.demo.model.Order;
 import com.example.demo.model.OrderLineItems;
-import jakarta.transaction.Transactional;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.example.demo.repository.OrderRepository;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import javax.transaction.Transactional;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -27,7 +28,7 @@ public class OrderService {
     private OrderRepository orderRepository;
 
     @Autowired
-    private  WebClient webClient;
+    private  WebClient.Builder webClient;
 
     public Order placeOrder(OrderRequest orderRequest){
         Order order = Order.builder()
@@ -44,8 +45,8 @@ public class OrderService {
                 .map(OrderLineItems::getSkuCode)
                 .toList();
 
-        InventoryResponse[] inventoryResponses = webClient.get()
-                .uri("http://localhost:8082/api/inventory", uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
+        InventoryResponse[] inventoryResponses = webClient.build().get()
+                .uri("http://inventory-service/api/inventory", uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
                 .retrieve()
                 .bodyToMono(InventoryResponse[].class)
                 .block();

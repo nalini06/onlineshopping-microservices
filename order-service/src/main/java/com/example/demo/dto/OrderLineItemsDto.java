@@ -1,13 +1,14 @@
 package com.example.demo.dto;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.OneToMany;
+
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import com.example.demo.model.OrderLineItems;
 
+import javax.persistence.CascadeType;
+import javax.persistence.OneToMany;
 import java.math.BigDecimal;
 import java.util.List;
 
