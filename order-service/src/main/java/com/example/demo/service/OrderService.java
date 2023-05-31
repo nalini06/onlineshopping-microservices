@@ -30,7 +30,7 @@ public class OrderService {
     @Autowired
     private  WebClient.Builder webClient;
 
-    public Order placeOrder(OrderRequest orderRequest){
+    public String placeOrder(OrderRequest orderRequest){
         Order order = Order.builder()
                 .orderNumber(UUID.randomUUID().toString())
                 .build();
@@ -63,7 +63,7 @@ public class OrderService {
 
 
 
-        return order;
+        return "Order Placed successfully!!";
     }
 
     public OrderLineItems mapToDto(OrderLineItemsDto itemsDto){
