@@ -9,6 +9,8 @@ import com.example.demo.model.OrderLineItems;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.sleuth.Span;
+import org.springframework.cloud.sleuth.Tracer;
 import org.springframework.stereotype.Service;
 import com.example.demo.repository.OrderRepository;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -30,6 +32,9 @@ public class OrderService {
     @Autowired
     private  WebClient.Builder webClient;
 
+    @Autowired
+    private Tracer tracer;
+
     public String placeOrder(OrderRequest orderRequest){
         Order order = Order.builder()
                 .orderNumber(UUID.randomUUID().toString())
@@ -45,25 +50,27 @@ public class OrderService {
                 .map(OrderLineItems::getSkuCode)
                 .toList();
 
-        InventoryResponse[] inventoryResponses = webClient.build().get()
-                .uri("http://inventory-service/api/inventory", uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
-                .retrieve()
-                .bodyToMono(InventoryResponse[].class)
-                .block();
+        Span inventoryLookUp = tracer.nextSpan().name("InventoryServiceLookup");
 
-        boolean allProductsInStock = Arrays.stream(inventoryResponses).allMatch(InventoryResponse::isInStock);
+        try( Tracer.SpanInScope spanInScope = tracer.withSpan(inventoryLookUp.start())){
+            InventoryResponse[] inventoryResponses = webClient.build().get()
+                    .uri("http://inventory-service/api/inventory", uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
+                    .retrieve()
+                    .bodyToMono(InventoryResponse[].class)
+                    .block();
 
-        if(allProductsInStock){
-            orderRepository.save(order);
-        }else{
+            boolean allProductsInStock = Arrays.stream(inventoryResponses).allMatch(InventoryResponse::isInStock);
 
-            log.error("Failed to save order in db ");
-            throw  new IllegalArgumentException("Product is not available in inventory");
+            if(allProductsInStock){
+                orderRepository.save(order);
+            }else{
+                log.error("Failed to save order in db ");
+                throw  new IllegalArgumentException("Product is not available in inventory");
+            }
+            return "Order Placed successfully!!";
+        }finally {
+                inventoryLookUp.end();
         }
-
-
-
-        return "Order Placed successfully!!";
     }
 
     public OrderLineItems mapToDto(OrderLineItemsDto itemsDto){
