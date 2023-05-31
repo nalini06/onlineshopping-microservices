@@ -75,7 +75,7 @@
       <command value="mvn clean verify" />
     </option>
   </component>
-  <component name="RunManager" selected="Application.com.onlineshopping.product.service.ProductServiceApplication">
+  <component name="RunManager" selected="Application.DiscoveryServerApplication">
     <configuration name="ApiGatewayApplication" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="com.onlineshopping.api.apigateway.ApiGatewayApplication" />
       <module name="api-gateway" />
@@ -153,11 +153,11 @@
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Application.DiscoveryServerApplication" />
         <item itemvalue="Application.com.onlineshopping.product.service.ProductServiceApplication" />
         <item itemvalue="Application.ApiGatewayApplication" />
         <item itemvalue="Application.OrderServiceApplication" />
         <item itemvalue="Application.InventoryServiceApplication" />
-        <item itemvalue="Application.DiscoveryServerApplication" />
       </list>
     </recent_temporary>
   </component>
