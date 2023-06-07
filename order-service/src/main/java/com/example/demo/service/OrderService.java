@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 
+import com.example.demo.event.OrderPlacedEvent;
 import com.example.demo.dto.InventoryResponse;
 import com.example.demo.dto.OrderLineItemsDto;
 import com.example.demo.dto.OrderRequest;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.sleuth.Span;
 import org.springframework.cloud.sleuth.Tracer;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import com.example.demo.repository.OrderRepository;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -19,7 +21,6 @@ import javax.transaction.Transactional;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -34,6 +35,9 @@ public class OrderService {
 
     @Autowired
     private Tracer tracer;
+
+    @Autowired
+    private KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
 
     public String placeOrder(OrderRequest orderRequest){
         Order order = Order.builder()
@@ -63,11 +67,13 @@ public class OrderService {
 
             if(allProductsInStock){
                 orderRepository.save(order);
+                kafkaTemplate.send("notificationTopic", new OrderPlacedEvent(order.getOrderNumber()));
+                return "Order Placed successfully!!";
             }else{
                 log.error("Failed to save order in db ");
                 throw  new IllegalArgumentException("Product is not available in inventory");
             }
-            return "Order Placed successfully!!";
+
         }finally {
                 inventoryLookUp.end();
         }
